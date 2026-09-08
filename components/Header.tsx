@@ -18,7 +18,7 @@ export default async function Header() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="font-serif-heading text-2xl font-black tracking-tight">
-            The Daily Wire Post
+            Ulloor Vasigal
           </Link>
 
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
