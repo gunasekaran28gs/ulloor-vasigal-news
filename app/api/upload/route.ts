@@ -6,11 +6,16 @@ import { canWrite } from "@/lib/permissions";
 export const runtime = "nodejs";
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const EXTENSIONS: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
 
 export async function POST(req: Request) {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
 
   if (!session || !canWrite(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,7 +28,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  if (!EXTENSIONS[file.type]) {
     return NextResponse.json({ error: "Only JPG, PNG, WEBP, or GIF images are allowed" }, { status: 400 });
   }
 
@@ -31,8 +36,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Image must be under 5MB" }, { status: 400 });
   }
 
-  const userId = (session.user as any).id;
-  const ext = file.name.split(".").pop() || "jpg";
+  const userId = session.user.id;
+  const ext = EXTENSIONS[file.type];
   const filename = `articles/${userId}-${Date.now()}.${ext}`;
 
   const blob = await put(filename, file, {

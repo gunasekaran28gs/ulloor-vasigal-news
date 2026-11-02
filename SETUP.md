@@ -17,7 +17,7 @@ npm install -D prisma tsx @types/bcryptjs
 
 Copy everything from this package into your project, matching folder paths:
 - `prisma/schema.prisma`, `prisma/seed.ts` → `prisma/`
-- everything under `src/` → your project's `src/`
+- `app/`, `components/`, `lib/` → your project root
 - `next.config.ts`, `.env.example` → project root (merge `next.config.ts` if you already customized it)
 
 ## 3. Set up environment variables
@@ -72,15 +72,15 @@ Visit `http://localhost:3000`. Sign in at `/login`, then go to `/dashboard` to w
 
 ## 6. Before deploying
 
-- Update `src/lib/site.ts` with your real site name, description, and URL.
+- Update `lib/site.ts` with your real site name, description, and URL.
 - Set `NEXT_PUBLIC_SITE_URL` in your production environment to your real domain.
 - Tighten `next.config.ts` image `remotePatterns` to your actual image host (Supabase Storage / Cloudinary domain) instead of `**`.
-- Add a real `public/logo.png` and `public/og-default.png` (referenced in JSON-LD and Open Graph tags).
+- Replace the placeholder `public/logo.png` and `public/og-default.png` (referenced in JSON-LD and Open Graph tags).
 - Deploy to Vercel free tier (recommended — pairs best with Next.js ISR) and connect your Supabase/Neon `DATABASE_URL`.
 
 ## What's included
 
-- **Roles**: ADMIN / EDITOR / WRITER / READER, enforced in `middleware.ts` and API routes.
+- **Roles**: ADMIN / EDITOR / WRITER / READER, enforced in `proxy.ts` and API routes.
 - **Article workflow**: Writers save drafts → submit for review → Editors/Admins publish.
 - **SEO**: per-page `generateMetadata` (title, description, canonical, Open Graph, Twitter cards), `sitemap.ts`, `robots.ts`.
 - **JSON-LD**: `NewsMediaOrganization` (root layout), `WebSite` + `SearchAction` (homepage), `NewsArticle` + `BreadcrumbList` (article pages).

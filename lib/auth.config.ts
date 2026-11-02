@@ -1,7 +1,8 @@
 import type { NextAuthConfig } from "next-auth";
+import type { Role } from "./permissions";
 
 // Edge-safe config: NO Prisma, NO bcrypt, NO providers here.
-// Middleware imports only this file, keeping the Edge Function bundle small.
+// proxy.ts imports only this file, keeping the Edge Function bundle small.
 // The full config (with Credentials provider) lives in auth.ts and is used
 // everywhere else (API routes, server components) which run in the Node runtime.
 export const authConfig = {
@@ -13,15 +14,15 @@ export const authConfig = {
   callbacks: {
     jwt: async ({ token, user }) => {
       if (user) {
-        token.role = (user as any).role;
-        token.id = (user as any).id;
+        token.role = user.role;
+        token.id = user.id;
       }
       return token;
     },
     session: async ({ session, token }) => {
       if (session.user) {
-        (session.user as any).role = token.role;
-        (session.user as any).id = token.id;
+        session.user.role = token.role as Role;
+        session.user.id = token.id as string;
       }
       return session;
     },

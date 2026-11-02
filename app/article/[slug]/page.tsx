@@ -3,17 +3,26 @@ import { siteConfig } from "@/lib/site";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
-import ArticleCard from "@/components/ArticleCard";
+import { cache } from "react";
+import { articleCardSelect } from "@/lib/articles";
+import { formatDateTime } from "@/lib/format";
+import { decodeSlug } from "@/lib/slugify";
+import { CategoryBadge, GridCard } from "@/components/ArticleCard";
+import Breadcrumb from "@/components/Breadcrumb";
+import JsonLd from "@/components/JsonLd";
+import SectionHeading from "@/components/SectionHeading";
+import ShareButtons from "@/components/ShareButtons";
+import Sidebar from "@/components/Sidebar";
+import ViewTracker from "@/components/ViewTracker";
 
 export const revalidate = 120;
 
-async function getArticle(slug: string) {
-  return prisma.article.findFirst({
-    where: { slug, status: "PUBLISHED" },
-    include: { author: true, category: true, tags: true },
-  });
-}
+const getArticle = cache((param: string) =>
+  prisma.article.findFirst({
+    where: { slug: decodeSlug(param), status: "PUBLISHED" },
+    include: { author: { select: { name: true } }, category: true, tags: true },
+  })
+);
 
 export async function generateStaticParams() {
   const articles = await prisma.article.findMany({
@@ -36,7 +45,7 @@ export async function generateMetadata({
 
   const title = article.metaTitle || article.title;
   const description = article.metaDescription || article.excerpt || undefined;
-  const url = `${siteConfig.url}/article/${article.slug}`;
+  const url = `${siteConfig.url}/article/${encodeURIComponent(article.slug)}`;
 
   return {
     title,
@@ -69,18 +78,15 @@ export default async function ArticlePage({
   const article = await getArticle(slug);
   if (!article) notFound();
 
-  // fire-and-forget view count increment
-  prisma.article.update({ where: { id: article.id }, data: { views: { increment: 1 } } }).catch(() => {});
-
   const related = await prisma.article.findMany({
     where: {
       status: "PUBLISHED",
       id: { not: article.id },
       ...(article.categoryId ? { categoryId: article.categoryId } : {}),
     },
-    include: { author: true, category: true },
+    select: articleCardSelect,
     orderBy: { publishedAt: "desc" },
-    take: 3,
+    take: 6,
   });
 
   const articleJsonLd = {
@@ -107,7 +113,7 @@ export default async function ArticlePage({
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `${siteConfig.url}/article/${article.slug}`,
+      "@id": `${siteConfig.url}/article/${encodeURIComponent(article.slug)}`,
     },
   };
 
@@ -122,7 +128,7 @@ export default async function ArticlePage({
               "@type": "ListItem",
               position: 2,
               name: article.category.name,
-              item: `${siteConfig.url}/category/${article.category.slug}`,
+              item: `${siteConfig.url}/category/${encodeURIComponent(article.category.slug)}`,
             },
           ]
         : []),
@@ -130,97 +136,88 @@ export default async function ArticlePage({
         "@type": "ListItem",
         position: article.category ? 3 : 2,
         name: article.title,
-        item: `${siteConfig.url}/article/${article.slug}`,
+        item: `${siteConfig.url}/article/${encodeURIComponent(article.slug)}`,
       },
     ],
   };
 
+  const canonicalUrl = `${siteConfig.url}/article/${encodeURIComponent(article.slug)}`;
+
   return (
-    <article className="max-w-3xl mx-auto px-4 py-10">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+    <div className="mx-auto max-w-[1200px] px-4 py-6">
+      <JsonLd data={articleJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
+      <ViewTracker articleId={article.id} />
+
+      <Breadcrumb
+        items={[
+          { label: "Home", href: "/" },
+          ...(article.category ? [{ label: article.category.name, href: `/category/${article.category.slug}` }] : []),
+          { label: article.title },
+        ]}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-      />
 
-      <nav className="text-xs text-gray-400 mb-4 flex gap-1.5" aria-label="Breadcrumb">
-        <Link href="/" className="hover:text-gray-700">Home</Link>
-        {article.category && (
-          <>
-            <span>/</span>
-            <Link href={`/category/${article.category.slug}`} className="hover:text-gray-700">
-              {article.category.name}
-            </Link>
-          </>
-        )}
-      </nav>
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-8">
+        <div className="min-w-0">
+          <article>
+            {article.category && <CategoryBadge category={article.category} />}
 
-      {article.category && (
-        <Link
-          href={`/category/${article.category.slug}`}
-          className="text-xs font-bold uppercase tracking-wide text-red-700"
-        >
-          {article.category.name}
-        </Link>
-      )}
+            <h1 className="mb-4 mt-3 text-2xl font-bold leading-snug text-ink md:text-4xl md:leading-snug">
+              {article.title}
+            </h1>
 
-      <h1 className="font-serif-heading text-3xl md:text-4xl font-black mt-2 mb-4 leading-tight">
-        {article.title}
-      </h1>
+            {article.excerpt && <p className="mb-4 text-base leading-relaxed text-body md:text-lg md:leading-relaxed">{article.excerpt}</p>}
 
-      {article.excerpt && (
-        <p className="text-lg text-gray-600 mb-6">{article.excerpt}</p>
-      )}
+            <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+              <span className="font-semibold text-body">{article.author?.name || "Staff Writer"}</span>
+              <time dateTime={article.publishedAt?.toISOString()}>{formatDateTime(article.publishedAt)}</time>
+              <span>{article.views} views</span>
+            </div>
 
-      <div className="flex items-center gap-3 text-sm text-gray-500 mb-8 pb-8 border-b border-gray-200">
-        <span className="font-semibold text-gray-800">{article.author?.name || "Staff Writer"}</span>
-        <span>·</span>
-        <time dateTime={article.publishedAt?.toISOString()}>
-          {article.publishedAt &&
-            new Date(article.publishedAt).toLocaleDateString("en-US", {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}
-        </time>
-        <span>·</span>
-        <span>{article.views} views</span>
+            <div className="mb-6">
+              <ShareButtons url={canonicalUrl} title={article.title} image={article.coverImage} />
+            </div>
+
+            {article.coverImage && (
+              <div className="relative mb-7 aspect-[16/9] w-full overflow-hidden bg-soft">
+                <Image
+                  src={article.coverImage}
+                  alt={article.title}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 780px"
+                  className="object-cover"
+                  priority
+                />
+              </div>
+            )}
+
+            <div className="prose-article" dangerouslySetInnerHTML={{ __html: article.content }} />
+
+            {article.tags.length > 0 && (
+              <div className="mt-10 flex flex-wrap gap-2">
+                {article.tags.map((t) => (
+                  <span key={t.id} className="bg-soft px-3 py-1.5 text-xs text-muted">
+                    #{t.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </article>
+
+          {related.length > 0 && (
+            <section className="mt-14 print:hidden">
+              <SectionHeading title="Related Posts" />
+              <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 md:gap-x-6">
+                {related.map((a) => (
+                  <GridCard key={a.id} article={a} />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+
+        <Sidebar excludeId={article.id} />
       </div>
-
-      {article.coverImage && (
-        <div className="relative w-full aspect-[16/9] mb-8 rounded-lg overflow-hidden bg-gray-100">
-          <Image src={article.coverImage} alt={article.title} fill className="object-cover" priority />
-        </div>
-      )}
-
-      <div
-        className="prose-article text-gray-800"
-        dangerouslySetInnerHTML={{ __html: article.content }}
-      />
-
-      {article.tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-10">
-          {article.tags.map((t) => (
-            <span key={t.id} className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
-              #{t.name}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {related.length > 0 && (
-        <section className="mt-16 pt-8 border-t border-gray-200">
-          <h2 className="font-serif-heading text-xl font-bold mb-6">Related Stories</h2>
-          <div className="grid sm:grid-cols-3 gap-6">
-            {related.map((a) => (
-              <ArticleCard key={a.id} article={a} size="medium" />
-            ))}
-          </div>
-        </section>
-      )}
-    </article>
+    </div>
   );
 }

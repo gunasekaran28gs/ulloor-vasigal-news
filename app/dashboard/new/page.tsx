@@ -5,7 +5,7 @@ import ArticleForm from "@/components/ArticleForm";
 
 export default async function NewArticlePage() {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
   const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
 
   return <ArticleForm categories={categories} canPublish={canPublish(role)} />;

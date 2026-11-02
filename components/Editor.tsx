@@ -1,6 +1,6 @@
 "use client";
 
-import { useEditor, EditorContent, Editor as TiptapEditor } from "@tiptap/react";
+import { useEditor, EditorContent, Editor as TiptapEditor, type JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
@@ -8,8 +8,8 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { useRef, useState } from "react";
 
 type EditorProps = {
-  content?: any;
-  onChange: (html: string, json: any) => void;
+  content?: string;
+  onChange: (html: string, json: JSONContent) => void;
 };
 
 export default function Editor({ content, onChange }: EditorProps) {
@@ -18,13 +18,14 @@ export default function Editor({ content, onChange }: EditorProps) {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ link: false }),
       Image,
       Link.configure({ openOnClick: false }),
       Placeholder.configure({ placeholder: "Write your story…" }),
     ],
     content: content || "",
     immediatelyRender: false,
+    shouldRerenderOnTransaction: true,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML(), editor.getJSON());
     },
@@ -61,13 +62,15 @@ export default function Editor({ content, onChange }: EditorProps) {
   };
 
   const setLink = () => {
-    const url = window.prompt("Link URL");
-    if (url) editor.chain().focus().setLink({ href: url }).run();
+    const url = window.prompt("Link URL (leave empty to remove)", editor.getAttributes("link").href || "");
+    if (url === null) return;
+    if (url) editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+    else editor.chain().focus().extendMarkRange("link").unsetLink().run();
   };
 
   return (
-    <div className="border border-gray-300 rounded-md">
-      <div className="flex flex-wrap gap-1 border-b border-gray-200 px-2 py-2 bg-gray-50 rounded-t-md">
+    <div className="border border-line rounded-md">
+      <div className="flex flex-wrap gap-1 border-b border-line px-2 py-2 bg-soft rounded-t-md">
         <ToolbarBtn active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}>B</ToolbarBtn>
         <ToolbarBtn active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}>I</ToolbarBtn>
         <ToolbarBtn active={editor.isActive("heading", { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>H2</ToolbarBtn>
@@ -107,7 +110,7 @@ function ToolbarBtn({
       type="button"
       onClick={onClick}
       className={`text-xs font-semibold px-2.5 py-1.5 rounded ${
-        active ? "bg-red-700 text-white" : "bg-white border border-gray-300 hover:bg-gray-100"
+        active ? "bg-brand text-white" : "bg-surface border border-line hover:bg-soft"
       }`}
     >
       {children}

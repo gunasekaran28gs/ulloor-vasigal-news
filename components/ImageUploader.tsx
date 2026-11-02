@@ -36,15 +36,15 @@ export default function ImageUploader({ value, onChange, label = "Cover image" }
 
   return (
     <div>
-      <label className="text-xs font-semibold text-gray-500 block mb-1">{label}</label>
+      <label className="text-xs font-semibold text-muted block mb-1">{label}</label>
 
       {value ? (
-        <div className="relative w-full aspect-[16/9] mb-2 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
-          <Image src={value} alt="Cover preview" fill className="object-cover" />
+        <div className="relative w-full aspect-[16/9] mb-2 rounded-md overflow-hidden bg-soft border border-line">
+          <Image src={value} alt="Cover preview" fill sizes="(max-width: 640px) 100vw, 370px" className="object-cover" />
           <button
             type="button"
             onClick={() => onChange("")}
-            className="absolute top-2 right-2 bg-white/90 hover:bg-white text-xs font-semibold px-2 py-1 rounded shadow"
+            className="absolute top-2 right-2 bg-white/90 hover:bg-surface text-xs font-semibold px-2 py-1 rounded shadow"
           >
             Remove
           </button>
@@ -54,7 +54,7 @@ export default function ImageUploader({ value, onChange, label = "Cover image" }
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="w-full aspect-[16/9] mb-2 rounded-md border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-sm text-gray-400 hover:border-red-700 hover:text-red-700 transition-colors disabled:opacity-50"
+          className="w-full aspect-[16/9] mb-2 rounded-md border-2 border-dashed border-line flex flex-col items-center justify-center text-sm text-muted hover:border-brand hover:text-brand-text transition-colors disabled:opacity-50"
         >
           {uploading ? "Uploading…" : "Click to upload an image"}
         </button>
@@ -72,7 +72,7 @@ export default function ImageUploader({ value, onChange, label = "Cover image" }
         }}
       />
 
-      {error && <p className="text-xs text-red-700 mt-1">{error}</p>}
+      {error && <p className="text-xs text-danger mt-1">{error}</p>}
     </div>
   );
 }

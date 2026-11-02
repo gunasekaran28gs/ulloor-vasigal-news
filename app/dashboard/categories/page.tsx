@@ -6,7 +6,7 @@ import CategoryManager from "@/components/CategoryManager";
 
 export default async function CategoriesPage() {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
 
   if (!canManageCategories(role)) redirect("/dashboard");
 
@@ -17,7 +17,7 @@ export default async function CategoriesPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <h1 className="font-serif-heading text-2xl font-black mb-6">Manage Categories</h1>
+      <h1 className="text-2xl font-bold text-ink mb-6">Manage Categories</h1>
       <CategoryManager initialCategories={categories} />
     </div>
   );

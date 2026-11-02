@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
-import { Inter, Merriweather } from "next/font/google";
+import { Noto_Sans_Tamil } from "next/font/google";
 import "./globals.css";
 import { siteConfig } from "@/lib/site";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import JsonLd from "@/components/JsonLd";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const merriweather = Merriweather({
-  subsets: ["latin"],
-  weight: ["400", "700", "900"],
-  variable: "--font-serif",
-});
+const noto = Noto_Sans_Tamil({ subsets: ["tamil", "latin"], variable: "--font-noto" });
+
+const themeScript = `try{var t=localStorage.getItem("theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -21,7 +19,7 @@ export const metadata: Metadata = {
   description: siteConfig.description,
   openGraph: {
     type: "website",
-    locale: "en_US",
+    locale: "ta_IN",
     url: siteConfig.url,
     siteName: siteConfig.name,
     title: siteConfig.name,
@@ -44,7 +42,6 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: siteConfig.url,
     types: {
       "application/rss+xml": `${siteConfig.url}/rss.xml`,
     },
@@ -66,12 +63,12 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className={`${inter.variable} ${merriweather.variable}`}>
-      <body className="min-h-screen bg-white text-gray-900 antialiased font-sans">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
-        />
+    <html lang="ta" className={noto.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className="min-h-screen bg-surface font-sans text-ink antialiased">
+        <JsonLd data={orgJsonLd} />
         <Header />
         <main>{children}</main>
         <Footer />

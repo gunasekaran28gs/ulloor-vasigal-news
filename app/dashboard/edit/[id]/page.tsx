@@ -11,8 +11,8 @@ export default async function EditArticlePage({
 }) {
   const { id } = await params;
   const session = await auth();
-  const role = (session?.user as any)?.role;
-  const userId = (session?.user as any)?.id;
+  const role = session?.user?.role;
+  const userId = session?.user?.id;
 
   const [article, categories] = await Promise.all([
     prisma.article.findUnique({ where: { id } }),

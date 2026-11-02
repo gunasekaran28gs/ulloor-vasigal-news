@@ -16,7 +16,7 @@ export async function GET() {
 // POST /api/categories — create (admin/editor only)
 export async function POST(req: Request) {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
 
   if (!session || !canManageCategories(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -29,8 +29,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
-  let slug = slugify(name);
-  const existing = await prisma.category.findUnique({ where: { slug } });
+  const slug = slugify(name);
+  if (!slug) {
+    return NextResponse.json({ error: "Name must contain letters or numbers" }, { status: 400 });
+  }
+
+  const existing = await prisma.category.findFirst({ where: { OR: [{ slug }, { name: name.trim() }] } });
   if (existing) {
     return NextResponse.json({ error: "A category with this name already exists" }, { status: 409 });
   }
